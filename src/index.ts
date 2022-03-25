@@ -1,29 +1,40 @@
 // TODO:
-// Upload to Git repo
-// Upload as a draft to itch.io
-// Share with Stefan
 // Prevent catchup lag after tab-out
 // Change/upgrade the target string
 // Change the keyboard used to type
+// Auto-calculate average bananas per word
 
 import { Button } from "./button";
 import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
+import { Target } from "./target";
 import { Collideable } from "./types";
 
 // let keyboardKeys = [" ", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
-let keyboardKeys = ["C", "A", "T"];
-let charactersToChooseFrom: string[] = [];
+let keyboardKeys = ["A"];
+let charactersToChooseFrom: string[];
 let randomNumberSize = 65536;
-for (let i = 0; i < randomNumberSize; i++) {
-    charactersToChooseFrom.push(keyboardKeys[i % keyboardKeys.length]);
+updateCharactersToChooseFrom();
+
+function updateCharactersToChooseFrom() {
+    charactersToChooseFrom = [];
+    for (let i = 0; i < randomNumberSize; i++) {
+        charactersToChooseFrom.push(keyboardKeys[i % keyboardKeys.length]);
+    }
 }
 
+let currentTarget: Target = new Target(
+    ["C", "A", "T"],
+    "CAT",
+    [1, 8, 40],
+    0,
+);
 let targetString: string[] = ["C", "A", "T"];
+let displayTargetString: string = "CAT";
 let currentString: string[] = [];
 
 document.body.appendChild(canvas);
 
-let recruitPrice = 1;
+let recruitPrice = 10;
 let button1 = new Button(
     100,
     100,
@@ -39,7 +50,7 @@ let button1 = new Button(
         g.monkeys += 1;
         g.lettersPerSecond += 1;
         g.bananas -= recruitPrice;
-        recruitPrice *= 2;
+        recruitPrice += 2;
         button1.text = "Recruit Monkey " + recruitPrice;
     },
     () => {
@@ -53,7 +64,7 @@ let button1 = new Button(
 
 let button2 = new Button(
     100,
-    400,
+    350,
     80,
     30,
     "Type",
@@ -63,6 +74,41 @@ let button2 = new Button(
         g.lettersToTypeRemainder += 1;
     },
     () => {}
+);
+
+let upgradeKeyboardPrice = 100;
+let button3 = new Button(
+    250,
+    400,
+    80,
+    30,
+    "Upgrade Keyboard 100",
+    rgbString(200, 200, 255),
+    rgbString(180, 180, 230),
+    () => {
+        if (button3.isDisabled) {
+            return;
+        }
+        g.bananas -= upgradeKeyboardPrice;
+        if (keyboardKeys.length === 1) {
+            keyboardKeys.push("C");
+        } else if (keyboardKeys.length === 2) {
+            keyboardKeys.push("T");
+        }
+        updateCharactersToChooseFrom();
+        upgradeKeyboardPrice *= 10;
+        if (keyboardKeys.length === 3) {
+            upgradeKeyboardPrice = Infinity;
+        }
+        button3.text = "Upgrade Keyboard " + upgradeKeyboardPrice;
+    },
+    () => {
+        if (upgradeKeyboardPrice > g.bananas) {
+            button3.isDisabled = true;
+        } else {
+            button3.isDisabled = false;
+        }
+    }
 );
 
 // store the mouse xy in case it gets executed faster than
@@ -157,8 +203,9 @@ function draw(currentTimeMillis: number) {
         currentString.push(character);
         if (currentString.length >= targetString.length) {
             lastWordFinishTimeMillis = currentTimeMillis;
-            if (countMatchingLetters(currentString, targetString) === targetString.length) {
-                g.bananas += 1;
+            let matchingLetters: number = countMatchingLetters(currentString, targetString);
+            if (matchingLetters > 0) {
+                g.bananas += currentTarget.rewards[matchingLetters - 1];
             }
             if (g.lettersToTypeRemainder >= 1) {
                 currentString = [];
@@ -195,9 +242,20 @@ function draw(currentTimeMillis: number) {
     ctx.save();
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
+    ctx.textAlign = "center";
     ctx.fillText(g.lettersPerSecond.toString(), 140, 80);
-    ctx.fillText(g.bananas.toString(), 140, 55);
-    ctx.fillText(elapsedTimeMillis.toString(), 0, 20);
+    ctx.fillText(g.bananas.toString() + " bananas", 140, 55);
+    for (let i = 0; i < keyboardKeys.length; i++) {
+        ctx.fillText(keyboardKeys[i], 180 + i * 20, 300);
+    }
+    ctx.textAlign = "left";
+    ctx.fillText("Target String: " + displayTargetString, 250, 120);
+    for (let i = 0; i < currentTarget.rewards.length; i++) {
+        let line = (i + 1) + ": " + currentTarget.rewards[i] + " bananas";
+        ctx.fillText(line, 280, 140 + 20 * i);
+    }
+    ctx.textAlign = "right";
+    ctx.fillText("Keyboard Keys:", 160, 300);
     ctx.restore();
 
     for (let i = 0; i < drawables.length; i++) {
@@ -229,7 +287,7 @@ function download(filename: string, text: string) {
     element.click();
   
     document.body.removeChild(element);
-  }
+}
 
 function getRandomString(charactersToChooseFrom: string[], n: number) {
     let randomNumbers = getRandomNumbers(n);
