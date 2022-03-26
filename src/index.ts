@@ -1,36 +1,155 @@
 // TODO:
 // Prevent catchup lag after tab-out
-// Change/upgrade the target string
-// Change the keyboard used to type
+// Add upgrades
 // Auto-calculate average bananas per word
+// Add save/load/reset
+// get rid of repeats of if (button.isDisabled) {return;}
 
 import { Button } from "./button";
 import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
 import { Target } from "./target";
+import { targets } from "./targets";
+import { download, generatePermutations } from "./test_permutations";
 import { Collideable } from "./types";
+import { countMatchingLetters } from "./util";
 
+// let report1 = generatePermutations(
+//     ["H", "O", "T"],
+//     ["H", "O", "O", "T"],
+// );
+// download("hot-hoot-permutations.csv", report1);
+
+// let report2 = generatePermutations(
+//     ["H", "O", "O", "T"],
+//     ["H", "O", "O", "T"],
+// );
+// download("hoot-hoot-permutations.csv", report2);
+
+let buttonColor: string = rgbString(200, 200, 255);
+let buttonHoverColor: string = rgbString(180, 180, 230);
+
+// Make buttons out of all possible keyboard keys
 // let keyboardKeys = [" ", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+let allKeyboardKeys = ["⎵", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+let maxKeyboardKeys = 1;
+for (let i = 0; i < allKeyboardKeys.length; i++) {
+    let key = allKeyboardKeys[i];
+    let button = new Button(
+        40 + 30 * i,
+        450,
+        25,
+        25,
+        key,
+        buttonColor,
+        buttonHoverColor,
+        () => {
+            if (button.isDisabled) {
+                return;
+            }
+            createCurrentKeyboardKeyButton(keyboardKeys.length, key);
+            keyboardKeys.push(key);
+            updateCharactersToChooseFrom();
+            currentString = [];
+        },
+        () => {
+            if (keyboardKeys.length < maxKeyboardKeys) {
+                button.isDisabled = false;
+            } else {
+                button.isDisabled = true;
+            }
+        },
+    );
+}
+
 let keyboardKeys = ["A"];
 let charactersToChooseFrom: string[];
 let randomNumberSize = 65536;
 updateCharactersToChooseFrom();
+let keyboardKeyButtons: Button[] = []
+createCurrentKeyboardKeyButton(0, keyboardKeys[0]);
+
+// Make a button out of the a keyboard key so you
+// can click to remove it from your keyboard.
+// i is the index in the keyboardKeys array
+// On click it deletes and remakes all the buttons
+function createCurrentKeyboardKeyButton(i: number, key: string) {
+    let button = new Button(
+        180 + 30 * i,
+        280,
+        25,
+        25,
+        key,
+        buttonColor,
+        buttonHoverColor,
+        () => {
+            if (button.isDisabled) {
+                return;
+            }
+            keyboardKeys.splice(i, 1);
+            updateCharactersToChooseFrom();
+            for (let j = 0; j < keyboardKeyButtons.length; j++) {
+                keyboardKeyButtons[j].delete();
+            }
+            for (let j = 0; j < keyboardKeys.length; j++) {
+                let key = keyboardKeys[j];
+                createCurrentKeyboardKeyButton(j, key);
+            }
+            currentString = [];
+        },
+        () => {},
+    );
+    keyboardKeyButtons.push(button);
+}
 
 function updateCharactersToChooseFrom() {
     charactersToChooseFrom = [];
+    if (keyboardKeys.length === 0) {
+        return;
+    }
     for (let i = 0; i < randomNumberSize; i++) {
         charactersToChooseFrom.push(keyboardKeys[i % keyboardKeys.length]);
     }
 }
 
-let currentTarget: Target = new Target(
-    ["C", "A", "T"],
-    "CAT",
-    [1, 8, 40],
-    0,
-);
-let targetString: string[] = ["C", "A", "T"];
-let displayTargetString: string = "CAT";
+let currentTarget: Target = targets[0];
 let currentString: string[] = [];
+
+let targetButtons: Button[] = [];
+for (let i = 0; i < targets.length; i++) {
+    let button = new Button(
+        500,
+        50 + 35 * i,
+        80,
+        30,
+        targets[i].displayString + " " + targets[i].price,
+        buttonColor,
+        buttonHoverColor,
+        () => {
+            if (button.isDisabled) {
+                return;
+            }
+            g.bananas -= targets[i].price;
+            // un-disable the current target
+            for (let j = 0; j < targets.length; j++) {
+                if (targets[j].displayString === currentTarget.displayString) {
+                    targetButtons[j].isDisabled = false;
+                }
+            }
+            currentTarget = targets[i];
+            targetButtons[i].isDisabled = true;
+        },
+        () => {
+            if (targets[i].price > g.bananas
+                || targets[i].displayString === currentTarget.displayString) {
+                button.isDisabled = true;
+            } else {
+                button.isDisabled = false;
+            }
+        },
+    );
+    targetButtons.push(button);
+}
+targetButtons[0].isDisabled = true;
 
 document.body.appendChild(canvas);
 
@@ -41,8 +160,8 @@ let button1 = new Button(
     80,
     30,
     "Recruit Monkey " + recruitPrice,
-    rgbString(200, 200, 255),
-    rgbString(180, 180, 230),
+    buttonColor,
+    buttonHoverColor,
     () => {
         if (button1.isDisabled) {
             return;
@@ -62,16 +181,22 @@ let button1 = new Button(
     },
 );
 
+let lastClickedTimeMillis: number;
 let button2 = new Button(
     100,
     350,
     80,
     30,
     "Type",
-    rgbString(200, 200, 255),
-    rgbString(180, 180, 230),
-    () => {
+    buttonColor,
+    buttonHoverColor,
+    (currentTimeMillis: number) => {
+        if (currentTimeMillis !== undefined
+            && (currentTimeMillis - lastClickedTimeMillis) < 50) {
+            return;
+        }
         g.lettersToTypeRemainder += 1;
+        lastClickedTimeMillis = currentTimeMillis;
     },
     () => {}
 );
@@ -83,23 +208,16 @@ let button3 = new Button(
     80,
     30,
     "Upgrade Keyboard 100",
-    rgbString(200, 200, 255),
-    rgbString(180, 180, 230),
+    buttonColor,
+    buttonHoverColor,
     () => {
         if (button3.isDisabled) {
             return;
         }
         g.bananas -= upgradeKeyboardPrice;
-        if (keyboardKeys.length === 1) {
-            keyboardKeys.push("C");
-        } else if (keyboardKeys.length === 2) {
-            keyboardKeys.push("T");
-        }
+        maxKeyboardKeys += 1;
         updateCharactersToChooseFrom();
         upgradeKeyboardPrice *= 10;
-        if (keyboardKeys.length === 3) {
-            upgradeKeyboardPrice = Infinity;
-        }
         button3.text = "Upgrade Keyboard " + upgradeKeyboardPrice;
     },
     () => {
@@ -142,14 +260,13 @@ canvas.onmouseup = (ev: MouseEvent) => {
     let collideable: Collideable = getCollidingEntity(mouseX, mouseY);
     if (collideable !== undefined) {
         if (collideable.isMouseDowned) {
-            collideable.onClick();
+            collideable.onClick(ev.timeStamp);
         }
     }
     if (currentMouseDowned !== undefined) {
         currentMouseDowned.isMouseDowned = false;
     }
 }
-
 
 let previousTimeMillis: number;
 let previousHovered: Collideable;
@@ -190,7 +307,7 @@ function draw(currentTimeMillis: number) {
             && (currentTimeMillis - lastWordFinishTimeMillis) > 500
         ) || (
             g.lettersToTypeRemainder >= 1
-            && currentString.length >= targetString.length
+            && currentString.length >= currentTarget.letters.length
         )) {
         currentString = [];
         lastWordFinishTimeMillis = undefined;
@@ -199,11 +316,14 @@ function draw(currentTimeMillis: number) {
     // Generate the needed characters and award bananas
     while (g.lettersToTypeRemainder >= 1) {
         g.lettersToTypeRemainder -= 1;
+        if (charactersToChooseFrom.length === 0) {
+            continue;
+        }
         let character = getRandomCharacter();
         currentString.push(character);
-        if (currentString.length >= targetString.length) {
+        if (currentString.length >= currentTarget.letters.length) {
             lastWordFinishTimeMillis = currentTimeMillis;
-            let matchingLetters: number = countMatchingLetters(currentString, targetString);
+            let matchingLetters: number = countMatchingLetters(currentString, currentTarget.letters);
             if (matchingLetters > 0) {
                 g.bananas += currentTarget.rewards[matchingLetters - 1];
             }
@@ -217,7 +337,7 @@ function draw(currentTimeMillis: number) {
     ctx.save();
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
-    for(let i = 0; i < targetString.length; i++) {
+    for(let i = 0; i < currentTarget.letters.length; i++) {
         let character: string;
         if (i >= currentString.length) {
             character = "_"
@@ -226,7 +346,7 @@ function draw(currentTimeMillis: number) {
         }
         ctx.fillText(
             character,
-            120 + 20 * i,
+            100 + 20 * i,
             200
         );
     }
@@ -245,11 +365,8 @@ function draw(currentTimeMillis: number) {
     ctx.textAlign = "center";
     ctx.fillText(g.lettersPerSecond.toString(), 140, 80);
     ctx.fillText(g.bananas.toString() + " bananas", 140, 55);
-    for (let i = 0; i < keyboardKeys.length; i++) {
-        ctx.fillText(keyboardKeys[i], 180 + i * 20, 300);
-    }
     ctx.textAlign = "left";
-    ctx.fillText("Target String: " + displayTargetString, 250, 120);
+    ctx.fillText("Target String: " + currentTarget.displayString, 250, 120);
     for (let i = 0; i < currentTarget.rewards.length; i++) {
         let line = (i + 1) + ": " + currentTarget.rewards[i] + " bananas";
         ctx.fillText(line, 280, 140 + 20 * i);
@@ -274,19 +391,6 @@ function getCollidingEntity(pointX: number, pointY: number) {
         }
     }
     return undefined;
-}
-
-function download(filename: string, text: string) {
-    var element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-  
-    element.style.display = 'none';
-    document.body.appendChild(element);
-  
-    element.click();
-  
-    document.body.removeChild(element);
 }
 
 function getRandomString(charactersToChooseFrom: string[], n: number) {
@@ -318,17 +422,6 @@ function getRandomNumbers(n: number) {
     let randomNumbers = new Uint16Array(n);
     randomNumbers = crypto.getRandomValues(randomNumbers);
     return randomNumbers;
-}
-
-function countMatchingLetters(s1: string[], s2: string[]) {
-    let matching = 0;
-    let minLength = Math.min(s1.length, s2.length);
-    for (let i = 0; i < minLength; i++) {
-        if (s1[i] === s2[i]) {
-            matching++;
-        }
-    }
-    return matching;
 }
 
 function rgbString(red: number, green: number, blue: number) {

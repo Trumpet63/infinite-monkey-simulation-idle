@@ -1,0 +1,28 @@
+target string = "CAT"
+keyboard = "C"
+
+I have one letter in common with the target string,
+but that one letter is the only one I can type, so
+I have a 100% chane matching one letter
+
+target string = "CAT"
+keyboard = "C", "A"
+
+1/2 C
+1/2 A
+
+I have a 1/4 chance of getting both, and a 2/4 chance
+of getting one.
+
+In general if the target string is N distinct letters, 
+and I can type K of them, then
+1 match  : K(K - 1)^(K - 1) / K^K
+         = ((K - 1) / K) ^ (K - 1)
+
+K matches: 1 / K^K
+
+
+target string = "CATS"
+keyboard = "C", "A", "T"
+
+1 match: K(K - 1)^(K - 1) / K^K

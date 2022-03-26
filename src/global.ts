@@ -19,4 +19,5 @@ export let g = {
     lettersPerSecond: 0,
     mouseX: -1,
     mouseY: -1,
+    idCounter: 0,
 };

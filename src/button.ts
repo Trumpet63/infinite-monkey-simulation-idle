@@ -1,6 +1,7 @@
 import { collideables, ctx, drawables, g, updateables } from "./global";
 
 export class Button {
+    public id: number;
     public topLeftX: number;
     public topLeftY: number;
     public width: number;
@@ -14,7 +15,7 @@ export class Button {
     public isHovered: boolean = false;
     public isDisabled: boolean = false;
     public isMouseDowned: boolean = false;
-    public onClick: () => void;
+    public onClick: (currentTimeMillis?: number) => void;
     public update: () => void;
 
     public constructor(
@@ -25,9 +26,11 @@ export class Button {
         text: string,
         color: string,
         hoveredColor: string,
-        onClick: () => void,
+        onClick: (currentTimeMillis?: number) => void,
         update: () => void,
     ) {
+        this.id = g.idCounter;
+        g.idCounter += 1;
         this.topLeftX = topLeftX;
         this.topLeftY = topLeftY;
         this.width = width;
@@ -92,5 +95,23 @@ export class Button {
             && pointX <= this.bottomRightX
             && this.topLeftY <= pointY
             && pointY <= this.bottomRightY;
+    }
+
+    public delete() {
+        for (let i = 0; i < drawables.length; i++) {
+            if (drawables[i].id === this.id) {
+                drawables.splice(i, 1);
+            }
+        }
+        for (let i = 0; i < collideables.length; i++) {
+            if (collideables[i].id === this.id) {
+                collideables.splice(i, 1);
+            }
+        }
+        for (let i = 0; i < updateables.length; i++) {
+            if (updateables[i].id === this.id) {
+                updateables.splice(i, 1);
+            }
+        }
     }
 }
