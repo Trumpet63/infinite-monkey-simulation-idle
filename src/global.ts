@@ -1,3 +1,4 @@
+import { targets } from "./targets";
 import { Collideable, Drawable, Updateable } from "./types";
 
 export let width: number = 1000;
@@ -14,10 +15,14 @@ export let updateables: Updateable[] = [];
 // Put any global variables that you want to be able to reassign here
 export let g = {
     bananas: 0,
-    monkeys: 1,
+    monkeys: 0,
     lettersToTypeRemainder: 0,
     lettersPerSecond: 0,
     mouseX: -1,
     mouseY: -1,
     idCounter: 0,
+    currentTargetIndex: 0,
+    currentTarget: targets[0],
+    keyboardKeys: ["A"],
+    maxKeyboardKeys: 1,
 };

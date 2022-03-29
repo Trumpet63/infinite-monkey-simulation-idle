@@ -1,13 +1,14 @@
 // TODO:
+// Auto-save every 10 seconds
+// Make the erase save button restart the game as well
 // Prevent catchup lag after tab-out
 // Add upgrades
 // Auto-calculate average bananas per word
-// Add save/load/reset
 // get rid of repeats of if (button.isDisabled) {return;}
 
 import { Button } from "./button";
 import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
-import { Target } from "./target";
+import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
 import { Collideable } from "./types";
@@ -25,13 +26,16 @@ import { countMatchingLetters } from "./util";
 // );
 // download("hoot-hoot-permutations.csv", report2);
 
+loadFromLocalStorage();
+
 let buttonColor: string = rgbString(200, 200, 255);
 let buttonHoverColor: string = rgbString(180, 180, 230);
+let eraseButtonColor: string = rgbString(255, 50, 50);
+let eraseButtonHoverColor: string = rgbString(225, 20, 20);
 
 // Make buttons out of all possible keyboard keys
-// let keyboardKeys = [" ", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
+// let allKeyboardKeys = [" ", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
 let allKeyboardKeys = ["⎵", "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"];
-let maxKeyboardKeys = 1;
 for (let i = 0; i < allKeyboardKeys.length; i++) {
     let key = allKeyboardKeys[i];
     let button = new Button(
@@ -46,13 +50,13 @@ for (let i = 0; i < allKeyboardKeys.length; i++) {
             if (button.isDisabled) {
                 return;
             }
-            createCurrentKeyboardKeyButton(keyboardKeys.length, key);
-            keyboardKeys.push(key);
+            createCurrentKeyboardKeyButton(g.keyboardKeys.length, key);
+            g.keyboardKeys.push(key);
             updateCharactersToChooseFrom();
             currentString = [];
         },
         () => {
-            if (keyboardKeys.length < maxKeyboardKeys) {
+            if (g.keyboardKeys.length < g.maxKeyboardKeys) {
                 button.isDisabled = false;
             } else {
                 button.isDisabled = true;
@@ -61,12 +65,14 @@ for (let i = 0; i < allKeyboardKeys.length; i++) {
     );
 }
 
-let keyboardKeys = ["A"];
 let charactersToChooseFrom: string[];
 let randomNumberSize = 65536;
 updateCharactersToChooseFrom();
 let keyboardKeyButtons: Button[] = []
-createCurrentKeyboardKeyButton(0, keyboardKeys[0]);
+
+for (let i = 0; i < g.keyboardKeys.length; i++) {
+    createCurrentKeyboardKeyButton(i, g.keyboardKeys[i]);
+}
 
 // Make a button out of the a keyboard key so you
 // can click to remove it from your keyboard.
@@ -85,13 +91,13 @@ function createCurrentKeyboardKeyButton(i: number, key: string) {
             if (button.isDisabled) {
                 return;
             }
-            keyboardKeys.splice(i, 1);
+            g.keyboardKeys.splice(i, 1);
             updateCharactersToChooseFrom();
             for (let j = 0; j < keyboardKeyButtons.length; j++) {
                 keyboardKeyButtons[j].delete();
             }
-            for (let j = 0; j < keyboardKeys.length; j++) {
-                let key = keyboardKeys[j];
+            for (let j = 0; j < g.keyboardKeys.length; j++) {
+                let key = g.keyboardKeys[j];
                 createCurrentKeyboardKeyButton(j, key);
             }
             currentString = [];
@@ -103,15 +109,16 @@ function createCurrentKeyboardKeyButton(i: number, key: string) {
 
 function updateCharactersToChooseFrom() {
     charactersToChooseFrom = [];
-    if (keyboardKeys.length === 0) {
+    if (g.keyboardKeys.length === 0) {
         return;
     }
     for (let i = 0; i < randomNumberSize; i++) {
-        charactersToChooseFrom.push(keyboardKeys[i % keyboardKeys.length]);
+        charactersToChooseFrom.push(
+            g.keyboardKeys[i % g.keyboardKeys.length]
+        );
     }
 }
 
-let currentTarget: Target = targets[0];
 let currentString: string[] = [];
 
 let targetButtons: Button[] = [];
@@ -131,16 +138,17 @@ for (let i = 0; i < targets.length; i++) {
             g.bananas -= targets[i].price;
             // un-disable the current target
             for (let j = 0; j < targets.length; j++) {
-                if (targets[j].displayString === currentTarget.displayString) {
+                if (targets[j].displayString === g.currentTarget.displayString) {
                     targetButtons[j].isDisabled = false;
                 }
             }
-            currentTarget = targets[i];
+            g.currentTarget = targets[i];
+            g.currentTargetIndex = i;
             targetButtons[i].isDisabled = true;
         },
         () => {
             if (targets[i].price > g.bananas
-                || targets[i].displayString === currentTarget.displayString) {
+                || targets[i].displayString === g.currentTarget.displayString) {
                 button.isDisabled = true;
             } else {
                 button.isDisabled = false;
@@ -149,7 +157,7 @@ for (let i = 0; i < targets.length; i++) {
     );
     targetButtons.push(button);
 }
-targetButtons[0].isDisabled = true;
+// targetButtons[0].isDisabled = true;
 
 document.body.appendChild(canvas);
 
@@ -215,7 +223,7 @@ let button3 = new Button(
             return;
         }
         g.bananas -= upgradeKeyboardPrice;
-        maxKeyboardKeys += 1;
+        g.maxKeyboardKeys += 1;
         updateCharactersToChooseFrom();
         upgradeKeyboardPrice *= 10;
         button3.text = "Upgrade Keyboard " + upgradeKeyboardPrice;
@@ -227,6 +235,30 @@ let button3 = new Button(
             button3.isDisabled = false;
         }
     }
+);
+
+let saveButton: Button = new Button(
+    10,
+    600,
+    100,
+    30,
+    "Save",
+    buttonColor,
+    buttonHoverColor,
+    () => {save()},
+    () => {},
+);
+
+let eraseButton: Button = new Button(
+    10,
+    640,
+    100,
+    30,
+    "Erase Save",
+    eraseButtonColor,
+    eraseButtonHoverColor,
+    () => {eraseSave()},
+    () => {},
 );
 
 // store the mouse xy in case it gets executed faster than
@@ -307,7 +339,7 @@ function draw(currentTimeMillis: number) {
             && (currentTimeMillis - lastWordFinishTimeMillis) > 500
         ) || (
             g.lettersToTypeRemainder >= 1
-            && currentString.length >= currentTarget.letters.length
+            && currentString.length >= g.currentTarget.letters.length
         )) {
         currentString = [];
         lastWordFinishTimeMillis = undefined;
@@ -321,11 +353,12 @@ function draw(currentTimeMillis: number) {
         }
         let character = getRandomCharacter();
         currentString.push(character);
-        if (currentString.length >= currentTarget.letters.length) {
+        if (currentString.length >= g.currentTarget.letters.length) {
             lastWordFinishTimeMillis = currentTimeMillis;
-            let matchingLetters: number = countMatchingLetters(currentString, currentTarget.letters);
+            let matchingLetters: number = countMatchingLetters(
+                currentString, g.currentTarget.letters);
             if (matchingLetters > 0) {
-                g.bananas += currentTarget.rewards[matchingLetters - 1];
+                g.bananas += g.currentTarget.rewards[matchingLetters - 1];
             }
             if (g.lettersToTypeRemainder >= 1) {
                 currentString = [];
@@ -337,7 +370,7 @@ function draw(currentTimeMillis: number) {
     ctx.save();
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
-    for(let i = 0; i < currentTarget.letters.length; i++) {
+    for(let i = 0; i < g.currentTarget.letters.length; i++) {
         let character: string;
         if (i >= currentString.length) {
             character = "_"
@@ -363,12 +396,14 @@ function draw(currentTimeMillis: number) {
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(g.lettersPerSecond.toString(), 140, 80);
+    ctx.fillText(g.monkeys.toString() + " monkeys", 140, 80);
     ctx.fillText(g.bananas.toString() + " bananas", 140, 55);
     ctx.textAlign = "left";
-    ctx.fillText("Target String: " + currentTarget.displayString, 250, 120);
-    for (let i = 0; i < currentTarget.rewards.length; i++) {
-        let line = (i + 1) + ": " + currentTarget.rewards[i] + " bananas";
+    ctx.fillText("Target String: "
+        + g.currentTarget.displayString, 250, 120);
+    for (let i = 0; i < g.currentTarget.rewards.length; i++) {
+        let line = (i + 1) + ": "
+            + g.currentTarget.rewards[i] + " bananas";
         ctx.fillText(line, 280, 140 + 20 * i);
     }
     ctx.textAlign = "right";
