@@ -25,4 +25,9 @@ export let g = {
     currentTarget: targets[0],
     keyboardKeys: ["A"],
     maxKeyboardKeys: 1,
+    targetOwned: [true],
 };
+
+for(let i = 1; i < targets.length; i++) {
+    g.targetOwned.push(false);
+}

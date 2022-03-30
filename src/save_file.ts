@@ -1,4 +1,4 @@
-export let saveFileVersion: number = 1;
+export let saveFileVersion: number = 2;
 
 export class SaveFile {
     // Use the version number to detect and invalidate
@@ -10,6 +10,7 @@ export class SaveFile {
     public targetIndex: number;
     public keyboardKeys: string[];
     public maxKeyboardKeys: number;
+    public targetOwned: boolean[];
 
     public constructor(
         bananas: number,
@@ -17,6 +18,7 @@ export class SaveFile {
         targetIndex: number,
         keyboardKeys: string[],
         maxKeyboardKeys: number,
+        targetOwned: boolean[],
     ) {
         this.version = saveFileVersion;
         this.bananas = bananas;
@@ -24,5 +26,6 @@ export class SaveFile {
         this.targetIndex = targetIndex;
         this.keyboardKeys = keyboardKeys;
         this.maxKeyboardKeys = maxKeyboardKeys;
+        this.targetOwned = targetOwned;
     }
 }

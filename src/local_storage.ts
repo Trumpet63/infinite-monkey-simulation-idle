@@ -19,6 +19,7 @@ function getSaveFile(): SaveFile {
         g.currentTargetIndex,
         g.keyboardKeys,
         g.maxKeyboardKeys,
+        g.targetOwned,
     );
 }
 
@@ -52,6 +53,7 @@ export function loadFromString(importString: string) {
     g.currentTarget = targets[loadedSave.targetIndex];
     g.keyboardKeys = loadedSave.keyboardKeys;
     g.maxKeyboardKeys = loadedSave.maxKeyboardKeys;
+    g.targetOwned = loadedSave.targetOwned;
 }
 
 export function exportSaveToString(): string {

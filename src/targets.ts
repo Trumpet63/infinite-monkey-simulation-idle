@@ -10,7 +10,7 @@ export let targets: Target[] = [
     new Target(
         ["H", "O", "O", "T"],
         "HOOT",
-        [5, 5, 20, 40, 120],
+        [5, 10, 40, 180],
         2000,
     ),
     new Target(

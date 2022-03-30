@@ -5,6 +5,17 @@
 // Add upgrades
 // Auto-calculate average bananas per word
 // get rid of repeats of if (button.isDisabled) {return;}
+ 
+// The UI is a complete mess!
+// The save should be encrypted
+// The erase save button should have a confirmation step
+// The erase save button should also reset the game (probably will rename the button)
+// There should be an import/export option to let the player back up their save
+// There are balance issues
+// There should be upgrades
+// There needs to be something like a bananas per second counter, or something more advanced
+// adjustable update rate for bananas per second
+// compressed notation for large numbers
 
 import { Button } from "./button";
 import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
@@ -123,32 +134,48 @@ let currentString: string[] = [];
 
 let targetButtons: Button[] = [];
 for (let i = 0; i < targets.length; i++) {
+    let buttonText: string = targets[i].displayString;
+    if (!g.targetOwned[i]) {
+        buttonText += " " + targets[i].price;
+    }
+
     let button = new Button(
         500,
         50 + 35 * i,
         80,
         30,
-        targets[i].displayString + " " + targets[i].price,
+        buttonText,
         buttonColor,
         buttonHoverColor,
         () => {
             if (button.isDisabled) {
                 return;
             }
-            g.bananas -= targets[i].price;
-            // un-disable the current target
-            for (let j = 0; j < targets.length; j++) {
-                if (targets[j].displayString === g.currentTarget.displayString) {
-                    targetButtons[j].isDisabled = false;
-                }
+            if (!g.targetOwned[i]) {
+                g.bananas -= targets[i].price;
+                button.text = targets[i].displayString;
+                g.targetOwned[i] = true;
             }
+
+            // un-disable the current target on selecting a new one
+            // for (let j = 0; j < targets.length; j++) {
+            //     if (targets[j].displayString === g.currentTarget.displayString) {
+            //         targetButtons[j].isDisabled = false;
+            //     }
+            // }
+
             g.currentTarget = targets[i];
             g.currentTargetIndex = i;
             targetButtons[i].isDisabled = true;
         },
         () => {
-            if (targets[i].price > g.bananas
-                || targets[i].displayString === g.currentTarget.displayString) {
+            if (
+                (
+                    targets[i].price > g.bananas
+                    && !g.targetOwned[i]
+                )
+                || targets[i].displayString === g.currentTarget.displayString
+            ) {
                 button.isDisabled = true;
             } else {
                 button.isDisabled = false;
@@ -157,11 +184,10 @@ for (let i = 0; i < targets.length; i++) {
     );
     targetButtons.push(button);
 }
-// targetButtons[0].isDisabled = true;
 
 document.body.appendChild(canvas);
 
-let recruitPrice = 10;
+let recruitPrice = 10 + 2 * g.monkeys;
 let button1 = new Button(
     100,
     100,
@@ -177,7 +203,7 @@ let button1 = new Button(
         g.monkeys += 1;
         g.lettersPerSecond += 1;
         g.bananas -= recruitPrice;
-        recruitPrice += 2;
+        recruitPrice = 10 + 2 * g.monkeys;
         button1.text = "Recruit Monkey " + recruitPrice;
     },
     () => {
@@ -209,13 +235,13 @@ let button2 = new Button(
     () => {}
 );
 
-let upgradeKeyboardPrice = 100;
+let upgradeKeyboardPrice = Math.pow(10, g.maxKeyboardKeys + 1);
 let button3 = new Button(
     250,
     400,
     80,
     30,
-    "Upgrade Keyboard 100",
+    "Upgrade Keyboard " + upgradeKeyboardPrice,
     buttonColor,
     buttonHoverColor,
     () => {
@@ -225,7 +251,7 @@ let button3 = new Button(
         g.bananas -= upgradeKeyboardPrice;
         g.maxKeyboardKeys += 1;
         updateCharactersToChooseFrom();
-        upgradeKeyboardPrice *= 10;
+        upgradeKeyboardPrice = Math.pow(10, g.maxKeyboardKeys + 1);
         button3.text = "Upgrade Keyboard " + upgradeKeyboardPrice;
     },
     () => {
@@ -396,14 +422,14 @@ function draw(currentTimeMillis: number) {
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(g.monkeys.toString() + " monkeys", 140, 80);
-    ctx.fillText(g.bananas.toString() + " bananas", 140, 55);
+    ctx.fillText(monkeys(g.monkeys), 140, 80);
+    ctx.fillText(bananas(g.bananas), 140, 55);
     ctx.textAlign = "left";
     ctx.fillText("Target String: "
         + g.currentTarget.displayString, 250, 120);
     for (let i = 0; i < g.currentTarget.rewards.length; i++) {
         let line = (i + 1) + ": "
-            + g.currentTarget.rewards[i] + " bananas";
+            + bananas(g.currentTarget.rewards[i]);
         ctx.fillText(line, 280, 140 + 20 * i);
     }
     ctx.textAlign = "right";
@@ -461,4 +487,20 @@ function getRandomNumbers(n: number) {
 
 function rgbString(red: number, green: number, blue: number) {
     return "rgb(" + red + "," + green + "," + blue + ")";
+}
+
+function bananas(number: number) {
+    if (number === 1) {
+        return number + " banana";
+    } else {
+        return number + " bananas";
+    }
+}
+
+function monkeys(number: number) { 
+    if (number === 1) {
+        return number + " monkey";
+    } else {
+        return number + " monkeys";
+    }
 }
