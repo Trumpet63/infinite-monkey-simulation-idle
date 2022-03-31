@@ -40,7 +40,10 @@ export function loadFromLocalStorage() {
 export function loadFromString(importString: string) {
     let loadedSave: SaveFile = JSON.parse(importString);
     if (loadedSave === undefined
-        || loadedSave.version !== saveFileVersion) {
+        || loadedSave === null) {
+        console.error("Failed to load save from local storage: JSON parse error");
+        return;
+    } else if (loadedSave.version !== saveFileVersion) {
         console.error("Failed to load save from local storage: Version mismatch");
         return;
     }

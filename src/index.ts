@@ -2,10 +2,9 @@
 // Auto-save every 10 seconds
 // Make the erase save button restart the game as well
 // Prevent catchup lag after tab-out
-// Add upgrades
 // Auto-calculate average bananas per word
-// get rid of repeats of if (button.isDisabled) {return;}
- 
+// get rid of code repeats of if (button.isDisabled) {return;}
+
 // The UI is a complete mess!
 // The save should be encrypted
 // The erase save button should have a confirmation step
@@ -13,7 +12,6 @@
 // There should be an import/export option to let the player back up their save
 // There are balance issues
 // There should be upgrades
-// There needs to be something like a bananas per second counter, or something more advanced
 // adjustable update rate for bananas per second
 // compressed notation for large numbers
 
@@ -287,6 +285,11 @@ let eraseButton: Button = new Button(
     () => {},
 );
 
+let incomeAccumulator: number = 0;
+let lastIncomeUpdateTimeMillis: number = performance.now();
+let millisPerIncomeUpdate: number = 2000;
+let lastBananasPerSecond: number = 0;
+
 // store the mouse xy in case it gets executed faster than
 // once every frame, which would be useless since hover is
 // handled only once every frame
@@ -384,7 +387,9 @@ function draw(currentTimeMillis: number) {
             let matchingLetters: number = countMatchingLetters(
                 currentString, g.currentTarget.letters);
             if (matchingLetters > 0) {
-                g.bananas += g.currentTarget.rewards[matchingLetters - 1];
+                let bananasToAdd = g.currentTarget.rewards[matchingLetters - 1];
+                g.bananas += bananasToAdd;
+                incomeAccumulator += bananasToAdd;
             }
             if (g.lettersToTypeRemainder >= 1) {
                 currentString = [];
@@ -399,7 +404,7 @@ function draw(currentTimeMillis: number) {
     for(let i = 0; i < g.currentTarget.letters.length; i++) {
         let character: string;
         if (i >= currentString.length) {
-            character = "_"
+            character = "_";
         } else {
             character = currentString[i];
         }
@@ -416,14 +421,25 @@ function draw(currentTimeMillis: number) {
         updateables[i].update();
     }
 
+    // Update the income per second if it's time to
+    let elapsedSinceLastIncomeUpdate = currentTimeMillis - lastIncomeUpdateTimeMillis;
+    if (elapsedSinceLastIncomeUpdate >= millisPerIncomeUpdate) {
+        lastBananasPerSecond = incomeAccumulator / (elapsedSinceLastIncomeUpdate / 1000);
+        incomeAccumulator = 0;
+        lastIncomeUpdateTimeMillis = currentTimeMillis;
+    }
+
     // Draw values at the end of the frame so they're as up
     // to date as they can be
     ctx.save();
     ctx.fillStyle = "black";
     ctx.font = "20px Arial";
+
     ctx.textAlign = "center";
     ctx.fillText(monkeys(g.monkeys), 140, 80);
     ctx.fillText(bananas(g.bananas), 140, 55);
+    ctx.fillText(bananasPerSecond(lastBananasPerSecond), 140, 30);
+
     ctx.textAlign = "left";
     ctx.fillText("Target String: "
         + g.currentTarget.displayString, 250, 120);
@@ -432,8 +448,10 @@ function draw(currentTimeMillis: number) {
             + bananas(g.currentTarget.rewards[i]);
         ctx.fillText(line, 280, 140 + 20 * i);
     }
+
     ctx.textAlign = "right";
     ctx.fillText("Keyboard Keys:", 160, 300);
+
     ctx.restore();
 
     for (let i = 0; i < drawables.length; i++) {
@@ -503,4 +521,17 @@ function monkeys(number: number) {
     } else {
         return number + " monkeys";
     }
+}
+
+function bananasPerSecond(number: number) {
+    number = Math.round(number);
+    if (number === 1) {
+        return number + " banana per second";
+    } else {
+        return number + " bananas per second";
+    }
+}
+
+function sorted(array: any[], compareFn?: (a: any, b: any) => number) {
+    return array.slice().sort(compareFn);
 }
