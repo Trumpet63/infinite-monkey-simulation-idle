@@ -26,6 +26,8 @@ export let g = {
     keyboardKeys: ["A"],
     maxKeyboardKeys: 1,
     targetOwned: [true],
+    additivePercentBonus: 0,
+    additiveFlatBonus: 0,
 };
 
 for(let i = 1; i < targets.length; i++) {

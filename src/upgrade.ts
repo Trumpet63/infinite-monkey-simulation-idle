@@ -7,12 +7,22 @@
 // increases in the bananas per second? If so, I have to make this
 // very generic.
 export class Upgrade {
-    public canBuy: boolean;
+    public maxLevel: number;
     public price: number;
     public level: number;
+    public text: string;
+    public buy: () => void;
 
-    // not sure this is right, just a placeholder
-    public update(level: number) {
-
+    public constructor(
+        maxLevel: number,
+        price: number,
+        text: string,
+        buy: () => void,
+    ) {
+        this.maxLevel = maxLevel;
+        this.price = price;
+        this.text = text;
+        this.level = 0;
+        this.buy = buy;
     }
 }

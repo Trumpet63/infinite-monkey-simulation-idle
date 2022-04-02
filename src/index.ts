@@ -4,6 +4,7 @@
 // Prevent catchup lag after tab-out
 // Auto-calculate average bananas per word
 // get rid of code repeats of if (button.isDisabled) {return;}
+// recruit multiple monkeys at a time (10x, 100x)
 
 // The UI is a complete mess!
 // The save should be encrypted
@@ -21,6 +22,7 @@ import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
 import { Collideable } from "./types";
+import { upgrades } from "./upgrades";
 import { countMatchingLetters } from "./util";
 
 // let report1 = generatePermutations(
@@ -155,13 +157,6 @@ for (let i = 0; i < targets.length; i++) {
                 g.targetOwned[i] = true;
             }
 
-            // un-disable the current target on selecting a new one
-            // for (let j = 0; j < targets.length; j++) {
-            //     if (targets[j].displayString === g.currentTarget.displayString) {
-            //         targetButtons[j].isDisabled = false;
-            //     }
-            // }
-
             g.currentTarget = targets[i];
             g.currentTargetIndex = i;
             targetButtons[i].isDisabled = true;
@@ -285,6 +280,75 @@ let eraseButton: Button = new Button(
     () => {},
 );
 
+let upgrade1: Button = new Button(
+    500,
+    300,
+    80,
+    30,
+    "Upgrade 1",
+    buttonColor,
+    buttonHoverColor,
+    () => {
+        if (upgrade1.isDisabled) {
+            return;
+        }
+        upgrades[0].buy();
+    },
+    () => {
+        if (upgrades[0].price > g.bananas) {
+            upgrade1.isDisabled = true;
+        } else {
+            upgrade1.isDisabled = false;
+        }
+    },
+);
+
+let upgrade2: Button = new Button(
+    500,
+    335,
+    80,
+    30,
+    "Upgrade 2",
+    buttonColor,
+    buttonHoverColor,
+    () => {
+        if (upgrade2.isDisabled) {
+            return;
+        }
+        upgrades[1].buy();
+    },
+    () => {
+        if (upgrades[1].price > g.bananas) {
+            upgrade2.isDisabled = true;
+        } else {
+            upgrade2.isDisabled = false;
+        }
+    },
+);
+
+let upgrade3: Button = new Button(
+    500,
+    370,
+    80,
+    30,
+    "Upgreade 3",
+    buttonColor,
+    buttonHoverColor,
+    () => {
+        if (upgrade3.isDisabled) {
+            return;
+        }
+        upgrades[2].buy();
+    },
+    () => {
+        if (upgrades[2].price > g.bananas) {
+            upgrade3.isDisabled = true;
+        } else {
+            upgrade3.isDisabled = false;
+        }
+    },
+);
+
 let incomeAccumulator: number = 0;
 let lastIncomeUpdateTimeMillis: number = performance.now();
 let millisPerIncomeUpdate: number = 2000;
@@ -387,7 +451,8 @@ function draw(currentTimeMillis: number) {
             let matchingLetters: number = countMatchingLetters(
                 currentString, g.currentTarget.letters);
             if (matchingLetters > 0) {
-                let bananasToAdd = g.currentTarget.rewards[matchingLetters - 1];
+                let bananasToAdd = (g.currentTarget.rewards[matchingLetters - 1]
+                    + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
                 g.bananas += bananasToAdd;
                 incomeAccumulator += bananasToAdd;
             }
@@ -436,16 +501,17 @@ function draw(currentTimeMillis: number) {
     ctx.font = "20px Arial";
 
     ctx.textAlign = "center";
-    ctx.fillText(monkeys(g.monkeys), 140, 80);
-    ctx.fillText(bananas(g.bananas), 140, 55);
     ctx.fillText(bananasPerSecond(lastBananasPerSecond), 140, 30);
+    ctx.fillText(bananas(g.bananas), 140, 55);
+    ctx.fillText(monkeys(g.monkeys), 140, 80);
 
     ctx.textAlign = "left";
     ctx.fillText("Target String: "
         + g.currentTarget.displayString, 250, 120);
     for (let i = 0; i < g.currentTarget.rewards.length; i++) {
-        let line = (i + 1) + ": "
-            + bananas(g.currentTarget.rewards[i]);
+        let reward = (g.currentTarget.rewards[i]
+            + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
+        let line = (i + 1) + ": " + bananas(reward);
         ctx.fillText(line, 280, 140 + 20 * i);
     }
 
@@ -508,6 +574,7 @@ function rgbString(red: number, green: number, blue: number) {
 }
 
 function bananas(number: number) {
+    number = Math.round(number);
     if (number === 1) {
         return number + " banana";
     } else {
@@ -534,4 +601,9 @@ function bananasPerSecond(number: number) {
 
 function sorted(array: any[], compareFn?: (a: any, b: any) => number) {
     return array.slice().sort(compareFn);
+}
+
+function roundToNPlaces(x: number, numPlaces: number): number {
+    let scale: number = Math.pow(10, numPlaces);
+    return Math.round(x * scale) / scale;
 }
