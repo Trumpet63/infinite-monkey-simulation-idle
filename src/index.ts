@@ -2,11 +2,14 @@
 // Auto-save every 10 seconds
 // Make the erase save button restart the game as well
 // Prevent catchup lag after tab-out
-// Auto-calculate average bananas per word
+// Auto-calculate true average bananas per word
 // get rid of code repeats of if (button.isDisabled) {return;}
 // recruit multiple monkeys at a time (10x, 100x)
+// do some kind of visual effect to indicate the quality of 
+//    the matches, e.g. turn gold and pause on perfect match
 
 // The UI is a complete mess!
+// Have text fit within the bounds of the buttons
 // The save should be encrypted
 // The erase save button should have a confirmation step
 // The erase save button should also reset the game (probably will rename the button)
@@ -22,6 +25,7 @@ import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
 import { Collideable } from "./types";
+import { Upgrade } from "./upgrade";
 import { upgrades } from "./upgrades";
 import { countMatchingLetters } from "./util";
 
@@ -280,74 +284,43 @@ let eraseButton: Button = new Button(
     () => {},
 );
 
-let upgrade1: Button = new Button(
-    500,
-    300,
-    80,
-    30,
-    "Upgrade 1",
-    buttonColor,
-    buttonHoverColor,
-    () => {
-        if (upgrade1.isDisabled) {
-            return;
-        }
-        upgrades[0].buy();
-    },
-    () => {
-        if (upgrades[0].price > g.bananas) {
-            upgrade1.isDisabled = true;
-        } else {
-            upgrade1.isDisabled = false;
-        }
-    },
-);
-
-let upgrade2: Button = new Button(
-    500,
-    335,
-    80,
-    30,
-    "Upgrade 2",
-    buttonColor,
-    buttonHoverColor,
-    () => {
-        if (upgrade2.isDisabled) {
-            return;
-        }
-        upgrades[1].buy();
-    },
-    () => {
-        if (upgrades[1].price > g.bananas) {
-            upgrade2.isDisabled = true;
-        } else {
-            upgrade2.isDisabled = false;
-        }
-    },
-);
-
-let upgrade3: Button = new Button(
-    500,
-    370,
-    80,
-    30,
-    "Upgreade 3",
-    buttonColor,
-    buttonHoverColor,
-    () => {
-        if (upgrade3.isDisabled) {
-            return;
-        }
-        upgrades[2].buy();
-    },
-    () => {
-        if (upgrades[2].price > g.bananas) {
-            upgrade3.isDisabled = true;
-        } else {
-            upgrade3.isDisabled = false;
-        }
-    },
-);
+let upgradeButtons: Button[] = [];
+function createUpgradeButtons() {
+    let sortedUpgrades: Upgrade[] = sorted(upgrades, (a: Upgrade, b: Upgrade) => {
+        return a.price - b.price;
+    });
+    for (let i = 0; i < sortedUpgrades.length; i++) {
+        let upgrade = sortedUpgrades[i];
+        let button: Button = new Button(
+            500,
+            300 + 35 * i,
+            80,
+            30,
+            upgrade.text + " " + upgrade.price,
+            buttonColor,
+            buttonHoverColor,
+            () => {
+                if (button.isDisabled) {
+                    return;
+                }
+                upgrade.buy();
+                for (let j = 0; j < upgradeButtons.length; j++) {
+                    upgradeButtons[j].delete();
+                }
+                createUpgradeButtons();
+            },
+            () => {
+                if (upgrade.price > g.bananas) {
+                    button.isDisabled = true;
+                } else {
+                    button.isDisabled = false;
+                }
+            },
+        );
+        upgradeButtons.push(button);
+    }
+}
+createUpgradeButtons();
 
 let incomeAccumulator: number = 0;
 let lastIncomeUpdateTimeMillis: number = performance.now();
