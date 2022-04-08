@@ -16,7 +16,7 @@ export let updateables: Updateable[] = [];
 export let g = {
     bananas: 0,
     monkeys: 0,
-    lettersToTypeRemainder: 0,
+    // lettersToTypeRemainder: 0,
     lettersPerSecond: 0,
     mouseX: -1,
     mouseY: -1,
@@ -28,6 +28,8 @@ export let g = {
     targetOwned: [true],
     additivePercentBonus: 0,
     additiveFlatBonus: 0,
+    charactersToChooseFrom: <string[]>[],
+    incomeAccumulator: 0,
 };
 
 for(let i = 1; i < targets.length; i++) {

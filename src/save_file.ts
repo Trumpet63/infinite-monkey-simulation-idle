@@ -1,4 +1,4 @@
-export let saveFileVersion: number = 2;
+export let saveFileVersion: number = 3;
 
 export class SaveFile {
     // Use the version number to detect and invalidate

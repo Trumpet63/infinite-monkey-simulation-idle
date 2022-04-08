@@ -29,8 +29,6 @@ export class Button {
         onClick: (currentTimeMillis?: number) => void,
         update: () => void,
     ) {
-        this.id = g.idCounter;
-        g.idCounter += 1;
         this.topLeftX = topLeftX;
         this.topLeftY = topLeftY;
         this.width = width;
@@ -43,12 +41,14 @@ export class Button {
         this.onClick = onClick;
         this.update = update;
 
+        this.id = g.idCounter;
+        g.idCounter += 1;
         drawables.push(this);
         collideables.push(this);
         updateables.push(this);
     }
 
-    public draw(currentTimeMillis: number) {
+    public draw() {
         let topLeftX = this.topLeftX;
         let topLeftY = this.topLeftY;
         let width = this.width;

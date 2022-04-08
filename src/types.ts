@@ -8,10 +8,11 @@ export type Collideable = {
     collide: (pointX: number, pointY: number) => boolean,
     isHovered: boolean,
     isMouseDowned: boolean,
+    isDisabled: boolean,
     onClick: (currentTimeMillis: number) => void,
 };
 
 export type Updateable = {
     id: number,
-    update: () => void,
+    update: (currentTimeMillis: number, elapsedTimeMillis: number) => void,
 };
