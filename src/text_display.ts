@@ -4,6 +4,7 @@ import { countMatchingLetters, getRandomCharacter } from "./util";
 export class TextDisplay {
     public x: number;
     public y: number;
+    public height: number;
     public id: number;
     public lettersToTypeRemainder: number = 0;
     public lastWordFinishTimeMillis: number;
@@ -16,9 +17,11 @@ export class TextDisplay {
     public constructor(
         x: number,
         y: number,
+        height: number,
     ) {
         this.x = x;
         this.y = y;
+        this.height = height;
 
         this.id = g.idCounter;
         g.idCounter += 1;
@@ -70,9 +73,18 @@ export class TextDisplay {
     
     public draw() {
         let currentString = this.currentString;
+        let fontSize: number = this.height * 4 / 7;
+        let width = g.currentTarget.letters.length * fontSize;
         ctx.save();
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(
+            this.x,
+            this.y,
+            width,
+            this.height
+        );
         ctx.fillStyle = "black";
-        ctx.font = "20px Arial";
+        ctx.font = fontSize + "px Arial";
         for(let i = 0; i < g.currentTarget.letters.length; i++) {
             let character: string;
             if (i >= currentString.length) {
@@ -82,8 +94,8 @@ export class TextDisplay {
             }
             ctx.fillText(
                 character,
-                this.x + 20 * i,
-                this.y
+                this.x + fontSize * 0.15 + fontSize * i,
+                this.y + fontSize * 1.2
             );
         }
         ctx.restore();

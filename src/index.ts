@@ -163,11 +163,16 @@ let button1 = new Button(
     buttonHoverColor,
     () => {
         g.monkeys += 1;
-        let numRows = 14
-        let row = g.monkeys % numRows;
-        let column = Math.floor(g.monkeys / numRows);
-        new TextDisplay(100 + 100 * column, 200 + 35 * row);
-        // g.lettersPerSecond += 1;
+        let shrink = g.monkeys * 1.2
+        let height = 35 - shrink;
+        // let numRows = 14
+        // let row = g.monkeys % numRows;
+        // let column = Math.floor(g.monkeys / numRows);
+        // let x = 100 + 100 * column;
+        // let y = 165 + 35 * row - (g.monkeys * (g.monkeys - 1) / 2);
+        let x = 50 + g.monkeys * g.currentTarget.letters.length * 35 * 4 / 7 - (shrink * (shrink - 1) / 2) * 7 / 4;
+        let y = 165 + g.monkeys * 10;
+        new TextDisplay(x, y, height);
         g.lettersPerSecond = 1;
         g.bananas -= recruitPrice;
         recruitPrice = 10 + 2 * g.monkeys;
@@ -255,7 +260,7 @@ let eraseButton: Button = new Button(
 // let upgradeButtons: Button[] = [];
 // createUpgradeButtons();
 
-let textDisplay = new TextDisplay(100, 200);
+let textDisplay = new TextDisplay(50, 165, 35);
 
 // let incomeAccumulator: number = 0;
 let lastIncomeUpdateTimeMillis: number = performance.now();
