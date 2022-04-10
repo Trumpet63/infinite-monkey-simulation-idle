@@ -32,3 +32,7 @@ export function getRandomNumbers(n: number) {
     randomNumbers = crypto.getRandomValues(randomNumbers);
     return randomNumbers;
 }
+
+export function rgbString(red: number, green: number, blue: number) {
+    return "rgb(" + red + "," + green + "," + blue + ")";
+}

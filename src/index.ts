@@ -3,10 +3,13 @@
 // Prevent catchup lag after tab-out
 // Auto-calculate true average bananas per word
 // recruit multiple monkeys at a time (10x, 100x)
-// do some kind of visual effect to indicate the quality of 
-//    the matches, e.g. turn gold and pause on perfect match
+// use a blinking underline animation for the next letter on
+//    any text display - like an old command line
+// visually indicate the number of letters your keyboard can fit
+// optimize the display of many text displays at once
+// good, but small-ish word list: https://simple.wikipedia.org/wiki/Wikipedia:Basic_English_combined_wordlist
+// source: https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists#Top_English_words_lists
 
-// The UI is a complete mess!
 // Have text fit within the bounds of the buttons
 // The save should be encrypted
 // The erase save button should have a confirmation step
@@ -17,14 +20,8 @@
 // adjustable update rate for bananas per second display
 // compressed notation for large numbers
 
-// What if each monkey had their own keyboard and computer?
-// The visuals of this would be pretty cool
-// If each monkey remained relatively slow, then it would be
-//    easier to communicate when each of them get matches
 // How many screens can I display at once?
-//    can I get to like 100k?
-//    probably not unless I figure out a way to summarize visually
-//    how high can I get without considering visuals?
+// 3k is about the limit right now
 
 // What if instead of picking one target word at a time, the player built up a dictionary?
 //    AND, what if, they earned bananas for every matching letter in their dictionary?
@@ -42,11 +39,11 @@ import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
 import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
-import { TextDisplay } from "./text_display";
+import { alignTextDisplaysToGrid, TextDisplay } from "./text_display";
 import { Collideable } from "./types";
 import { Upgrade } from "./upgrade";
 import { upgrades } from "./upgrades";
-import { countMatchingLetters, getRandomCharacter } from "./util";
+import { countMatchingLetters, getRandomCharacter, rgbString } from "./util";
 
 // let report1 = generatePermutations(
 //     ["H", "O", "T"],
@@ -73,8 +70,8 @@ let allKeyboardKeys = ["⎵", "A","B","C","D","E","F","G","H","I","J","K","L","M
 for (let i = 0; i < allKeyboardKeys.length; i++) {
     let key = allKeyboardKeys[i];
     let button = new Button(
-        40 + 30 * i,
-        450,
+        20 + 30 * i,
+        550,
         25,
         25,
         key,
@@ -115,8 +112,8 @@ for (let i = 0; i < targets.length; i++) {
     }
 
     let button = new Button(
-        500,
-        50 + 35 * i,
+        510,
+        15 + 35 * i,
         80,
         30,
         buttonText,
@@ -132,6 +129,7 @@ for (let i = 0; i < targets.length; i++) {
             g.currentTarget = targets[i];
             g.currentTargetIndex = i;
             targetButtons[i].isDisabled = true;
+            alignTextDisplaysToGrid();
         },
         () => {
             if (
@@ -163,16 +161,7 @@ let button1 = new Button(
     buttonHoverColor,
     () => {
         g.monkeys += 1;
-        let shrink = g.monkeys * 1.2
-        let height = 35 - shrink;
-        // let numRows = 14
-        // let row = g.monkeys % numRows;
-        // let column = Math.floor(g.monkeys / numRows);
-        // let x = 100 + 100 * column;
-        // let y = 165 + 35 * row - (g.monkeys * (g.monkeys - 1) / 2);
-        let x = 50 + g.monkeys * g.currentTarget.letters.length * 35 * 4 / 7 - (shrink * (shrink - 1) / 2) * 7 / 4;
-        let y = 165 + g.monkeys * 10;
-        new TextDisplay(x, y, height);
+        new TextDisplay();
         g.lettersPerSecond = 1;
         g.bananas -= recruitPrice;
         recruitPrice = 10 + 2 * g.monkeys;
@@ -190,7 +179,7 @@ let button1 = new Button(
 let lastClickedTimeMillis: number;
 let button2 = new Button(
     100,
-    350,
+    480,
     80,
     30,
     "Type",
@@ -210,7 +199,7 @@ let button2 = new Button(
 let upgradeKeyboardPrice = Math.pow(10, g.maxKeyboardKeys + 1);
 let button3 = new Button(
     250,
-    400,
+    480,
     80,
     30,
     "Upgrade Keyboard " + upgradeKeyboardPrice,
@@ -260,7 +249,7 @@ let eraseButton: Button = new Button(
 // let upgradeButtons: Button[] = [];
 // createUpgradeButtons();
 
-let textDisplay = new TextDisplay(50, 165, 35);
+let textDisplay = new TextDisplay();
 
 // let incomeAccumulator: number = 0;
 let lastIncomeUpdateTimeMillis: number = performance.now();
@@ -337,64 +326,6 @@ function draw(currentTimeMillis: number) {
         }
     }
 
-    // g.lettersToTypeRemainder += elapsedTimeMillis / 1000 * g.lettersPerSecond;
-    
-    // Make a finished word stay on screen for 500ms, or until
-    // another letter is typed
-    // if ((
-    //         lastWordFinishTimeMillis !== undefined
-    //         && (currentTimeMillis - lastWordFinishTimeMillis) > 500
-    //     ) || (
-    //         g.lettersToTypeRemainder >= 1
-    //         && currentString.length >= g.currentTarget.letters.length
-    //     )) {
-    //     currentString = [];
-    //     lastWordFinishTimeMillis = undefined;
-    // }
-    
-    // Generate the needed characters and award bananas
-    // while (g.lettersToTypeRemainder >= 1) {
-    //     g.lettersToTypeRemainder -= 1;
-    //     if (g.charactersToChooseFrom.length === 0) {
-    //         continue;
-    //     }
-    //     let character = getRandomCharacter();
-    //     currentString.push(character);
-    //     if (currentString.length >= g.currentTarget.letters.length) {
-    //         lastWordFinishTimeMillis = currentTimeMillis;
-    //         let matchingLetters: number = countMatchingLetters(
-    //             currentString, g.currentTarget.letters);
-    //         if (matchingLetters > 0) {
-    //             let bananasToAdd = (g.currentTarget.rewards[matchingLetters - 1]
-    //                 + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
-    //             g.bananas += bananasToAdd;
-    //             g.incomeAccumulator += bananasToAdd;
-    //         }
-    //         if (g.lettersToTypeRemainder >= 1) {
-    //             currentString = [];
-    //         }
-    //     }
-    // }
-
-    // Draw the current string on screen
-    // ctx.save();
-    // ctx.fillStyle = "black";
-    // ctx.font = "20px Arial";
-    // for(let i = 0; i < g.currentTarget.letters.length; i++) {
-    //     let character: string;
-    //     if (i >= currentString.length) {
-    //         character = "_";
-    //     } else {
-    //         character = currentString[i];
-    //     }
-    //     ctx.fillText(
-    //         character,
-    //         100 + 20 * i,
-    //         200
-    //     );
-    // }
-    // ctx.restore();
-
     // Call update on everything just before draw
     for (let i = 0; i < drawables.length; i++) {
         updateables[i].update(currentTimeMillis, elapsedTimeMillis);
@@ -421,16 +352,16 @@ function draw(currentTimeMillis: number) {
 
     ctx.textAlign = "left";
     ctx.fillText("Target String: "
-        + g.currentTarget.displayString, 250, 120);
+        + g.currentTarget.displayString, 280, 30);
     for (let i = 0; i < g.currentTarget.rewards.length; i++) {
         let reward = (g.currentTarget.rewards[i]
             + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
         let line = (i + 1) + ": " + bananas(reward);
-        ctx.fillText(line, 280, 140 + 20 * i);
+        ctx.fillText(line, 280, 55 + 20 * i);
     }
 
     ctx.textAlign = "right";
-    ctx.fillText("Keyboard Keys:", 160, 300);
+    ctx.fillText("Keyboard Keys:", 160, 450);
 
     ctx.restore();
 
@@ -449,7 +380,7 @@ function draw(currentTimeMillis: number) {
 function createCurrentKeyboardKeyButton(i: number, key: string) {
     let button = new Button(
         180 + 30 * i,
-        280,
+        430,
         25,
         25,
         key,
@@ -527,10 +458,6 @@ function getCollidingEntity(pointX: number, pointY: number) {
         }
     }
     return undefined;
-}
-
-function rgbString(red: number, green: number, blue: number) {
-    return "rgb(" + red + "," + green + "," + blue + ")";
 }
 
 function bananas(number: number) {
