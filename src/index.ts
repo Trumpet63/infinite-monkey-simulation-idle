@@ -44,6 +44,7 @@ import { Collideable } from "./types";
 import { Upgrade } from "./upgrade";
 import { upgrades } from "./upgrades";
 import { countMatchingLetters, getRandomCharacter, rgbString } from "./util";
+import { toParse } from "./unparsed_words";
 
 // let report1 = generatePermutations(
 //     ["H", "O", "T"],
