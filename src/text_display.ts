@@ -1,4 +1,4 @@
-import { ctx, drawables, g, updateables } from "./global";
+import { ctx, drawables, g, playerDictionary, updateables } from "./global";
 import { countMatchingLetters, getRandomCharacter, rgbString } from "./util";
 
 let textDisplays: TextDisplay[] = [];
@@ -12,7 +12,8 @@ export class TextDisplay {
     public lastWordFinishTimeMillis: number;
     public currentString: string[] = [];
     public correctColor: string = rgbString(255, 187, 0);
-    
+    public previousEvaluation: any;
+
     public constructor(
         // x: number,
         // y: number,
@@ -54,27 +55,30 @@ export class TextDisplay {
             }
             let character = getRandomCharacter();
             this.currentString.push(character);
+            let evaluation = this.evaluate(this.currentString, playerDictionary);
             if (this.currentString.length >= g.currentTarget.letters.length) {
                 this.lastWordFinishTimeMillis = currentTimeMillis;
-                let matchingLetters: number = countMatchingLetters(
-                    this.currentString, g.currentTarget.letters);
-                if (matchingLetters > 0) {
-                    let bananasToAdd = (g.currentTarget.rewards[matchingLetters - 1]
-                        + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
-                    g.bananas += bananasToAdd;
-                    g.incomeAccumulator += bananasToAdd;
-                }
+                // let matchingLetters: number = countMatchingLetters(
+                //     this.currentString, g.currentTarget.letters);
+                // if (matchingLetters > 0) {
+                let bananasToAdd = evaluation.matchCounts
+                    .reduce((s: number, x: number) => s + x * x);
+                // (g.currentTarget.rewards[matchingLetters - 1]
+                //     + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
+                g.bananas += bananasToAdd;
+                g.incomeAccumulator += bananasToAdd;
+                // }
                 if (this.lettersToTypeRemainder >= 1) {
                     this.currentString = [];
                 }
             }
+            this.previousEvaluation = evaluation;
         }
     }
     
     public draw() {
         let currentString = this.currentString;
         let fontSize: number = this.height * 4 / 7;
-        // let width = g.currentTarget.letters.length * fontSize;
         ctx.save();
         ctx.strokeStyle = "black";
         ctx.strokeRect(
@@ -91,10 +95,18 @@ export class TextDisplay {
             } else {
                 character = currentString[i];
             }
+            let gradeForLetter = 0;
+            if (this.previousEvaluation !== undefined) {
+                gradeForLetter = this.previousEvaluation.maxGradePerLetter[i];
+            }
             if (character === "_") {
                 ctx.fillStyle = "black";
-            } else if (character === g.currentTarget.letters[i]) {
+            } else if (gradeForLetter === 1) {
                 ctx.fillStyle = this.correctColor;
+            } else if (gradeForLetter === 2) {
+                ctx.fillStyle = "red";
+            } else if (gradeForLetter >= 3) {
+                ctx.fillStyle = "blue";
             } else {
                 ctx.fillStyle = "black";
             }
@@ -105,6 +117,48 @@ export class TextDisplay {
             );
         }
         ctx.restore();
+    }
+
+    public evaluate(letters: string[], dictionary: string[][]): {
+            gradeMatrix: number[][],
+            matchCounts: number[],
+            maxGradePerLetter: number[],
+        }
+    {
+        let gradeMatrix: number[][] = [];
+        let matchCounts: number[] = [];
+        for (let i = 0; i < dictionary.length; i++) {
+            let targetLetters: string[] = dictionary[i];
+            let grades: number[] = [];
+            let matchCount: number = 0;
+            for (let j = 0; j < targetLetters.length; j++) {
+                let grade: number = targetLetters[j] === letters[j] ? 1 : 0;
+                grades.push(grade)
+                matchCount += grade;
+            }
+            matchCounts.push(matchCount);
+            for (let j = 0; j < targetLetters.length; j++) {
+                grades[j] *= matchCount;
+            }
+            gradeMatrix.push(grades);
+        }
+    
+        let maxGradePerLetter: number[] = [];
+        for (let i = 0; i < letters.length; i++) {
+            let max: number = 0;
+            for (let j = 0; j < gradeMatrix.length; j++) {
+                if (gradeMatrix[j][i] > max) {
+                    max = gradeMatrix[j][i];
+                }
+            }
+            maxGradePerLetter.push(max);
+        }
+    
+        return {
+            gradeMatrix: gradeMatrix,
+            matchCounts: matchCounts,
+            maxGradePerLetter: maxGradePerLetter,
+        }
     }
 }
 

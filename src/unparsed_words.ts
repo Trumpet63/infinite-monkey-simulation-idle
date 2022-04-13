@@ -139,8 +139,8 @@ Compound: x-ray • yearbook • yourself • zookeeper
 `
 
 // Parsing logic
-function parseWords(toParse: string) {
-    return toParse.split("\n")
+export function parseWords(toParse: string) {
+    let words = toParse.split("\n")
     .filter(
         (value: string, index: number, array: string[]) => {
             return value.includes(":");
@@ -177,7 +177,9 @@ function parseWords(toParse: string) {
     )
     .filter(
         (value: string, index: number, array: string[]) => {
-            return !value.includes(" ");
+            return !value.includes(" ")
+                && value.length >= 3
+                && value.length <= 9;
         }
     )
     .filter(
@@ -186,4 +188,18 @@ function parseWords(toParse: string) {
         }
     )
     .sort();
+    
+    let groupedWords: string[][] = [];
+    for (let i = 3; i <= 9; i++) {
+        groupedWords.push([]);
+    }
+    for (let i = 0; i < words.length; i++) {
+        let word = words[i];
+        groupedWords[word.length - 3].push(word);
+    }
+    return groupedWords.flat();
 }
+
+// let words = parseWords(toParse);
+// console.log(words);
+// download("words_by_length.txt", words.join('",\n"'));

@@ -35,7 +35,7 @@
 // What if you can upgrade words?
 
 import { Button } from "./button";
-import { canvas, collideables, ctx, drawables, g, updateables } from "./global";
+import { canvas, collideables, ctx, drawables, g, playerDictionary, updateables } from "./global";
 import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
@@ -43,8 +43,9 @@ import { alignTextDisplaysToGrid, TextDisplay } from "./text_display";
 import { Collideable } from "./types";
 import { Upgrade } from "./upgrade";
 import { upgrades } from "./upgrades";
-import { countMatchingLetters, getRandomCharacter, rgbString } from "./util";
-import { toParse } from "./unparsed_words";
+import { countMatchingLetters, getRandomCharacter, getRandomInt, rgbString } from "./util";
+import { parseWords, toParse } from "./unparsed_words";
+import { words } from "./words";
 
 // let report1 = generatePermutations(
 //     ["H", "O", "T"],
@@ -151,7 +152,7 @@ for (let i = 0; i < targets.length; i++) {
 
 document.body.appendChild(canvas);
 
-let recruitPrice = 10 + 2 * g.monkeys;
+let recruitPrice = 10 * g.monkeys * g.monkeys;
 let button1 = new Button(
     100,
     100,
@@ -165,7 +166,7 @@ let button1 = new Button(
         new TextDisplay();
         g.lettersPerSecond = 1;
         g.bananas -= recruitPrice;
-        recruitPrice = 10 + 2 * g.monkeys;
+        recruitPrice = 10 * g.monkeys * g.monkeys;
         button1.text = "Recruit Monkey " + recruitPrice;
     },
     () => {
@@ -244,6 +245,54 @@ let eraseButton: Button = new Button(
     eraseButtonHoverColor,
     () => {eraseSave()},
     () => {},
+);
+
+let wordButtons: Button[] = [];
+let newWordPrice: number = 1;
+let newWordButton: Button = new Button(
+    350,
+    480,
+    80,
+    30,
+    "Buy New Word " + newWordPrice,
+    buttonColor,
+    buttonHoverColor,
+    () => {
+        g.bananas -= newWordPrice;
+        newWordPrice = (playerDictionary.length + 1) * (playerDictionary.length + 1);
+        newWordButton.text = "Buy New Word " + newWordPrice;
+        for (let i = 0; i < 3; i++) {
+            let wordIndex: number = getRandomInt(0, words[0].length);
+            let word: string = words[0][wordIndex];
+            let wordButton: Button = new Button(
+                400 + 85 * i,
+                445,
+                80,
+                30,
+                word,
+                buttonColor,
+                buttonHoverColor,
+                () => {
+                    for (let j = 0; j < wordButtons.length; j++) {
+                        wordButtons[j].delete();
+                    }
+                    wordButtons = [];
+                    playerDictionary.push(word.split(""));
+                    words[0].splice(wordIndex, 1);
+                },
+                () => {},
+            );
+            wordButtons.push(wordButton);
+        }
+    },
+    () => {
+        if (newWordPrice > g.bananas
+            || wordButtons.length > 0) {
+            newWordButton.isDisabled = true;
+        } else {
+            newWordButton.isDisabled = false;
+        }
+    }
 );
 
 // Comment out the upgrade buttons for now
@@ -351,15 +400,15 @@ function draw(currentTimeMillis: number) {
     ctx.fillText(bananas(g.bananas), 140, 55);
     ctx.fillText(monkeys(g.monkeys), 140, 80);
 
-    ctx.textAlign = "left";
-    ctx.fillText("Target String: "
-        + g.currentTarget.displayString, 280, 30);
-    for (let i = 0; i < g.currentTarget.rewards.length; i++) {
-        let reward = (g.currentTarget.rewards[i]
-            + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
-        let line = (i + 1) + ": " + bananas(reward);
-        ctx.fillText(line, 280, 55 + 20 * i);
-    }
+    // ctx.textAlign = "left";
+    // ctx.fillText("Target String: "
+    //     + g.currentTarget.displayString, 280, 30);
+    // for (let i = 0; i < g.currentTarget.rewards.length; i++) {
+    //     let reward = (g.currentTarget.rewards[i]
+    //         + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
+    //     let line = (i + 1) + ": " + bananas(reward);
+    //     ctx.fillText(line, 280, 55 + 20 * i);
+    // }
 
     ctx.textAlign = "right";
     ctx.fillText("Keyboard Keys:", 160, 450);

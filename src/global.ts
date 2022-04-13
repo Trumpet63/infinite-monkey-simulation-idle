@@ -11,11 +11,12 @@ ctx = canvas.getContext("2d");
 export let drawables: Drawable[] = [];
 export let collideables: Collideable[] = [];
 export let updateables: Updateable[] = [];
+export let playerDictionary = [["C", "A", "T"]];
 
 // Put any global variables that you want to be able to reassign here
 export let g = {
     bananas: 0,
-    monkeys: 0,
+    monkeys: 1,
     // lettersToTypeRemainder: 0,
     lettersPerSecond: 0,
     mouseX: -1,
