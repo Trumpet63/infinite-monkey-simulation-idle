@@ -1,6 +1,5 @@
 import { g } from "./global";
 import { SaveFile, saveFileVersion } from "./save_file";
-import { targets } from "./targets";
 
 let saveKey: string = "infine-monkey-idle-game";
 
@@ -53,7 +52,6 @@ export function loadFromString(importString: string) {
     g.monkeys = loadedSave.monkeys;
     g.lettersPerSecond = g.monkeys;
     g.currentTargetIndex = loadedSave.targetIndex;
-    g.currentTarget = targets[loadedSave.targetIndex];
     g.keyboardKeys = loadedSave.keyboardKeys;
     g.maxKeyboardKeys = loadedSave.maxKeyboardKeys;
     g.targetOwned = loadedSave.targetOwned;

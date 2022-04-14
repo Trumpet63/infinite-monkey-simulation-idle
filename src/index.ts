@@ -10,6 +10,11 @@
 // good, but small-ish word list: https://simple.wikipedia.org/wiki/Wikipedia:Basic_English_combined_wordlist
 // source: https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists#Top_English_words_lists
 
+// make it so you can't pull two of the same words
+// start the game with a random word
+// display the player's dictionary to them somehow
+// word particle effects?
+
 // Have text fit within the bounds of the buttons
 // The save should be encrypted
 // The erase save button should have a confirmation step
@@ -37,7 +42,6 @@
 import { Button } from "./button";
 import { canvas, collideables, ctx, drawables, g, playerDictionary, updateables } from "./global";
 import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
-import { targets } from "./targets";
 import { download, generatePermutations } from "./test_permutations";
 import { alignTextDisplaysToGrid, TextDisplay } from "./text_display";
 import { Collideable } from "./types";
@@ -106,53 +110,9 @@ for (let i = 0; i < g.keyboardKeys.length; i++) {
     createCurrentKeyboardKeyButton(i, g.keyboardKeys[i]);
 }
 
-let targetButtons: Button[] = [];
-for (let i = 0; i < targets.length; i++) {
-    let buttonText: string = targets[i].displayString;
-    if (!g.targetOwned[i]) {
-        buttonText += " " + targets[i].price;
-    }
-
-    let button = new Button(
-        510,
-        15 + 35 * i,
-        80,
-        30,
-        buttonText,
-        buttonColor,
-        buttonHoverColor,
-        () => {
-            if (!g.targetOwned[i]) {
-                g.bananas -= targets[i].price;
-                button.text = targets[i].displayString;
-                g.targetOwned[i] = true;
-            }
-
-            g.currentTarget = targets[i];
-            g.currentTargetIndex = i;
-            targetButtons[i].isDisabled = true;
-            alignTextDisplaysToGrid();
-        },
-        () => {
-            if (
-                (
-                    targets[i].price > g.bananas
-                    && !g.targetOwned[i]
-                )
-                || targets[i].displayString === g.currentTarget.displayString
-            ) {
-                button.isDisabled = true;
-            } else {
-                button.isDisabled = false;
-            }
-        },
-    );
-    targetButtons.push(button);
-}
-
 document.body.appendChild(canvas);
 
-let recruitPrice = 10 * g.monkeys * g.monkeys;
+let recruitPrice = 10 * (g.monkeys + 1) * (g.monkeys + 1);
 let button1 = new Button(
     100,
     100,
@@ -166,7 +126,7 @@ let button1 = new Button(
         new TextDisplay();
         g.lettersPerSecond = 1;
         g.bananas -= recruitPrice;
-        recruitPrice = 10 * g.monkeys * g.monkeys;
+        recruitPrice = 10 * (g.monkeys + 1) * (g.monkeys + 1);
         button1.text = "Recruit Monkey " + recruitPrice;
     },
     () => {
@@ -184,7 +144,7 @@ let button2 = new Button(
     480,
     80,
     30,
-    "Type",
+    "Gather Bananas",
     buttonColor,
     buttonHoverColor,
     (currentTimeMillis: number) => {
@@ -192,7 +152,7 @@ let button2 = new Button(
             && (currentTimeMillis - lastClickedTimeMillis) < 50) {
             return;
         }
-        textDisplay.lettersToTypeRemainder += 1;
+        g.bananas += 1;
         lastClickedTimeMillis = currentTimeMillis;
     },
     () => {}
@@ -299,9 +259,6 @@ let newWordButton: Button = new Button(
 // let upgradeButtons: Button[] = [];
 // createUpgradeButtons();
 
-let textDisplay = new TextDisplay();
-
-// let incomeAccumulator: number = 0;
 let lastIncomeUpdateTimeMillis: number = performance.now();
 let millisPerIncomeUpdate: number = 2000;
 let lastBananasPerSecond: number = 0;
@@ -349,7 +306,6 @@ canvas.onmouseup = (ev: MouseEvent) => {
 let previousTimeMillis: number;
 let previousHovered: Collideable;
 let currentMouseDowned: Collideable;
-// let lastWordFinishTimeMillis: number;
 
 window.requestAnimationFrame(draw);
 
@@ -377,7 +333,7 @@ function draw(currentTimeMillis: number) {
     }
 
     // Call update on everything just before draw
-    for (let i = 0; i < drawables.length; i++) {
+    for (let i = 0; i < updateables.length; i++) {
         updateables[i].update(currentTimeMillis, elapsedTimeMillis);
     }
 
@@ -399,16 +355,6 @@ function draw(currentTimeMillis: number) {
     ctx.fillText(bananasPerSecond(lastBananasPerSecond), 140, 30);
     ctx.fillText(bananas(g.bananas), 140, 55);
     ctx.fillText(monkeys(g.monkeys), 140, 80);
-
-    // ctx.textAlign = "left";
-    // ctx.fillText("Target String: "
-    //     + g.currentTarget.displayString, 280, 30);
-    // for (let i = 0; i < g.currentTarget.rewards.length; i++) {
-    //     let reward = (g.currentTarget.rewards[i]
-    //         + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
-    //     let line = (i + 1) + ": " + bananas(reward);
-    //     ctx.fillText(line, 280, 55 + 20 * i);
-    // }
 
     ctx.textAlign = "right";
     ctx.fillText("Keyboard Keys:", 160, 450);

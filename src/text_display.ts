@@ -1,5 +1,6 @@
 import { ctx, drawables, g, playerDictionary, updateables } from "./global";
 import { countMatchingLetters, getRandomCharacter, rgbString } from "./util";
+import { WordParticle } from "./word_particle";
 
 let textDisplays: TextDisplay[] = [];
 export class TextDisplay {
@@ -14,15 +15,7 @@ export class TextDisplay {
     public correctColor: string = rgbString(255, 187, 0);
     public previousEvaluation: any;
 
-    public constructor(
-        // x: number,
-        // y: number,
-        // height: number,
-    ) {
-        // this.x = x;
-        // this.y = y;
-        // this.height = height;
-
+    public constructor() {
         this.id = g.idCounter;
         g.idCounter += 1;
         drawables.push(this);
@@ -41,7 +34,7 @@ export class TextDisplay {
                 && (currentTimeMillis - this.lastWordFinishTimeMillis) > 500
             ) || (
                 this.lettersToTypeRemainder >= 1
-                && this.currentString.length >= g.currentTarget.letters.length
+                && this.currentString.length >= g.textDisplayLetters
             )) {
                 this.currentString = [];
             this.lastWordFinishTimeMillis = undefined;
@@ -56,20 +49,33 @@ export class TextDisplay {
             let character = getRandomCharacter();
             this.currentString.push(character);
             let evaluation = this.evaluate(this.currentString, playerDictionary);
-            if (this.currentString.length >= g.currentTarget.letters.length) {
+            if (this.currentString.length >= g.textDisplayLetters) {
                 this.lastWordFinishTimeMillis = currentTimeMillis;
-                // let matchingLetters: number = countMatchingLetters(
-                //     this.currentString, g.currentTarget.letters);
-                // if (matchingLetters > 0) {
-                let bananasToAdd = evaluation.matchCounts
-                    .reduce((s: number, x: number) => s + x * x);
-                // (g.currentTarget.rewards[matchingLetters - 1]
-                //     + g.additiveFlatBonus) * (1 + g.additivePercentBonus);
+                let bananasToAdd = 0;
+                for (let i = 0; i < evaluation.matchCounts.length; i++) {
+                    let matchCount = evaluation.matchCounts[i];
+                    bananasToAdd += this.getScore(matchCount);
+                }
                 g.bananas += bananasToAdd;
                 g.incomeAccumulator += bananasToAdd;
-                // }
                 if (this.lettersToTypeRemainder >= 1) {
                     this.currentString = [];
+                }
+                for (let i = 0; i < evaluation.matchCounts.length; i++) {
+                    let matchCount = evaluation.matchCounts[i];
+                    let color: string;
+                    if (matchCount < 1) {
+                        continue;
+                    } else {
+                        color = this.getColor(matchCount);
+                    }
+                    new WordParticle(
+                        playerDictionary[i].join(""),
+                        color,
+                        this.x + this.width / 2,
+                        this.y + this.height / 2,
+                        currentTimeMillis
+                    );
                 }
             }
             this.previousEvaluation = evaluation;
@@ -88,7 +94,7 @@ export class TextDisplay {
             this.height
         );
         ctx.font = fontSize + "px Arial";
-        for(let i = 0; i < g.currentTarget.letters.length; i++) {
+        for(let i = 0; i < g.textDisplayLetters; i++) {
             let character: string;
             if (i >= currentString.length) {
                 character = "_";
@@ -101,12 +107,8 @@ export class TextDisplay {
             }
             if (character === "_") {
                 ctx.fillStyle = "black";
-            } else if (gradeForLetter === 1) {
-                ctx.fillStyle = this.correctColor;
-            } else if (gradeForLetter === 2) {
-                ctx.fillStyle = "red";
-            } else if (gradeForLetter >= 3) {
-                ctx.fillStyle = "blue";
+            } else if (gradeForLetter >= 1) {
+                ctx.fillStyle = this.getColor(gradeForLetter);
             } else {
                 ctx.fillStyle = "black";
             }
@@ -160,6 +162,26 @@ export class TextDisplay {
             maxGradePerLetter: maxGradePerLetter,
         }
     }
+
+    public getScore(numMatches: number) {
+        if (numMatches === 0) {
+            return 0;
+        }
+        return Math.pow(5, numMatches - 1);
+    }
+
+    public getColor(numMatches: number) {
+        if (numMatches === 0) {
+            return "black";
+        } else if (numMatches === 1) {
+            return this.correctColor;
+        } else if (numMatches === 2) {
+            return "red";
+        } else if (numMatches >= 3) {
+            return "blue";
+        }
+        throw new Error("Undefined color for numMatches = " + numMatches);
+    }
 }
 
 export function alignTextDisplaysToGrid() {
@@ -173,7 +195,7 @@ export function alignTextDisplaysToGrid() {
     let nonEmptyRows;
     let height = 53;
     do {
-        width = g.currentTarget.letters.length * height * 4 / 7;
+        width = g.textDisplayLetters * height * 4 / 7;
         numColumns = Math.floor(maxWidth / width);
         nonEmptyRows = Math.ceil(numDisplays / numColumns);
         if (height * nonEmptyRows <= maxHeight) {
