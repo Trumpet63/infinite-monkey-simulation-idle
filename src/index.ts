@@ -12,8 +12,9 @@
 
 // make it so you can't pull two of the same words
 // start the game with a random word
-// display the player's dictionary to them somehow
-// word particle effects?
+// make dictionary scrollable, or have it handle more words better
+// last-second counters of one letter, two letter, etc. matches
+// be able to turn off one letter match word particles
 
 // Have text fit within the bounds of the buttons
 // The save should be encrypted
@@ -28,28 +29,24 @@
 // How many screens can I display at once?
 // 3k is about the limit right now
 
-// What if instead of picking one target word at a time, the player built up a dictionary?
-//    AND, what if, they earned bananas for every matching letter in their dictionary?
-//    (rather than for just the letters they matched with a particular word?)
 // This implies one feature where you can upgrade a particular slot to award more bananas
 //    e.g. double all bananas earned from matches in the second letter
 // What if, at the same time, words also awarded different amounts for different numbers of matches?
 // What if the game was structured kind of like a deck-builder?
-// What if the words you could add to your dictionary were chosen at random?
 // What if we brought back the idea of limiting how the player customized their keyboard?
 // What if you can upgrade words?
 
 import { Button } from "./button";
-import { canvas, collideables, ctx, drawables, g, playerDictionary, updateables } from "./global";
+import { canvas, collideables, ctx, drawables, foregroundDrawables, g, playerDictionary, updateables } from "./global";
 import { eraseSave, loadFromLocalStorage, save } from "./local_storage";
 import { download, generatePermutations } from "./test_permutations";
 import { alignTextDisplaysToGrid, TextDisplay } from "./text_display";
 import { Collideable } from "./types";
 import { Upgrade } from "./upgrade";
 import { upgrades } from "./upgrades";
-import { countMatchingLetters, getRandomCharacter, getRandomInt, rgbString } from "./util";
-import { parseWords, toParse } from "./unparsed_words";
+import { getRandomInt, rgbString } from "./util";
 import { words } from "./words";
+import { DictionaryView } from "./dictionary_view";
 
 // let report1 = generatePermutations(
 //     ["H", "O", "T"],
@@ -225,8 +222,8 @@ let newWordButton: Button = new Button(
             let wordIndex: number = getRandomInt(0, words[0].length);
             let word: string = words[0][wordIndex];
             let wordButton: Button = new Button(
-                400 + 85 * i,
-                445,
+                440,
+                445 + 35 * i,
                 80,
                 30,
                 word,
@@ -253,6 +250,29 @@ let newWordButton: Button = new Button(
             newWordButton.isDisabled = false;
         }
     }
+);
+
+let dictionaryButtonState = "Show";
+let dictionaryView: DictionaryView;
+let showDictionaryButton: Button = new Button(
+    540,
+    480,
+    80,
+    30,
+    dictionaryButtonState + " Dictionary",
+    buttonColor,
+    buttonHoverColor,
+    () => {
+        if (dictionaryButtonState === "Show") {
+            dictionaryButtonState = "Hide";
+            dictionaryView = new DictionaryView(540, 480);
+        } else {
+            dictionaryButtonState = "Show";
+            dictionaryView.delete();
+        }
+        showDictionaryButton.text = dictionaryButtonState + " Dictionary";
+    },
+    () => {},
 );
 
 // Comment out the upgrade buttons for now
@@ -363,6 +383,10 @@ function draw(currentTimeMillis: number) {
 
     for (let i = 0; i < drawables.length; i++) {
         drawables[i].draw(currentTimeMillis);
+    }
+
+    for (let i = 0; i < foregroundDrawables.length; i++) {
+        foregroundDrawables[i].draw(currentTimeMillis);
     }
 
     previousTimeMillis = currentTimeMillis;
@@ -476,9 +500,9 @@ function monkeys(number: number) {
 function bananasPerSecond(number: number) {
     number = Math.round(number);
     if (number === 1) {
-        return number + " banana per second";
+        return number + " banana last second";
     } else {
-        return number + " bananas per second";
+        return number + " bananas last second";
     }
 }
 
@@ -489,4 +513,8 @@ function sorted(array: any[], compareFn?: (a: any, b: any) => number) {
 function roundToNPlaces(x: number, numPlaces: number): number {
     let scale: number = Math.pow(10, numPlaces);
     return Math.round(x * scale) / scale;
+}
+
+export function cheat() {
+    g.bananas = 1000000000;
 }

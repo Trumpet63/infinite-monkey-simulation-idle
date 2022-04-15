@@ -8,6 +8,7 @@ canvas.width = width;
 canvas.height = height;
 ctx = canvas.getContext("2d");
 export let drawables: Drawable[] = [];
+export let foregroundDrawables: Drawable[] = [];
 export let collideables: Collideable[] = [];
 export let updateables: Updateable[] = [];
 export let playerDictionary = [["C", "A", "T"]];
